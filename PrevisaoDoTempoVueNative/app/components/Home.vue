@@ -35,10 +35,10 @@
 
           <StackLayout>
             <StackLayout class="card-item">
-              <Label class="city-title" :text="item.name" />
+              <Label class="city-title" :text="item.name + ' - ' + item.sys.country" />
               <FlexboxLayout class="card-header">
                 <Label class="temp-now" :text="item.main.temp_min + 'º'" />
-                <Image src="~/assets/images/sunset.png" class="temp-icon" />
+                <Image :src="`~/assets/images/${item.weather[0].main}.png`" class="temp-icon" />
               </FlexboxLayout>
 
               <FlexboxLayout alignItems="center" class="temp-box">
@@ -97,7 +97,10 @@ export default {
             console.log("loc result", result);
             this.needLocation = false;
             this.location = result;
-            this.getDataByLocation(this.location.latitude, this.location.longitude);
+            this.getDataByLocation(
+              this.location.latitude,
+              this.location.longitude
+            );
           })
           .catch(e => {
             console.log("loc error", e);
