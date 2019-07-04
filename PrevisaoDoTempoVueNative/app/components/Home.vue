@@ -22,31 +22,45 @@
 
     <StackLayout>
       <!-- <TextField v-model="searchText" class="search-bar" /> -->
+      <TextField
+        v-model="cityName"
+        class="search-bar"
+        @tap="cityName=''"
+        @textChange="getDataByCityName"
+      />
 
-      <ListView for="item in cards" @itemTap="onItemTap">
+      <ListView for="item in weatherDataList" @itemTap="onItemTap">
         <v-template>
           <!-- Shows the list item label in the default color and style. -->
 
           <StackLayout>
             <StackLayout class="card-item">
-              <Label class="text" :text="item.city" />
+              <Label class="city-title" :text="item.name" />
+              <FlexboxLayout class="card-header">
+                <Label class="temp-now" :text="item.main.temp_min + 'º'" />
+                <Image src="~/assets/images/sunset.png" class="temp-icon" />
+              </FlexboxLayout>
 
-              <Label class="text">
-                <FormattedString>
-                  <Span text="Min: " />
-                  <Span :text="item.min" style="color: green" />
-                </FormattedString>
-              </Label>
-              <Label class="text">
-                <FormattedString>
-                  <Span text="Max: " />
-                  <Span :text="item.max" style="color: orange" />
-                </FormattedString>
-              </Label>
-              <Label class="data-att">
+              <FlexboxLayout alignItems="center" class="temp-box">
+                <Label class="text">
+                  <FormattedString>
+                    <Span text="Min: " />
+                    <Span :text="parseInt(item.main.temp_min)" />
+                  </FormattedString>
+                </Label>
+                <Label class="pipe"></Label>
+                <Label class="text">
+                  <FormattedString>
+                    <Span text="Max: " />
+                    <Span :text="parseInt(item.main.temp_max)" />
+                  </FormattedString>
+                </Label>
+              </FlexboxLayout>
+
+              <Label class="data-att" textWrap="true">
                 <FormattedString>
                   <Span textWrap="true" text="Data da última atualização: " />
-                  <Span :text="item.last" />
+                  <Span :text="timeConverter(item.dt)" />
                 </FormattedString>
               </Label>
             </StackLayout>
@@ -59,48 +73,52 @@
 
 <script>
 import * as utils from "~/shared/utils";
+import * as Geolocation from "nativescript-geolocation";
 import SelectedPageService from "../shared/selected-page-service";
+import axios from "axios";
 
 export default {
-  mounted() {
-    SelectedPageService.getInstance().updateSelectedPage("Weather");
+  created() {
+    //Get Geolocation
+    Geolocation.enableLocationRequest(true).then(() => {
+      Geolocation.isEnabled().then(isLocationEnabled => {
+        console.log("result is " + isLocationEnabled);
+
+        if (!isLocationEnabled) {
+          this.needLocation = false;
+          this.locationFailure = true;
+          // potentially do more then just end here...
+          return;
+        }
+
+        // MUST pass empty object!!
+        Geolocation.getCurrentLocation({})
+          .then(result => {
+            console.log("loc result", result);
+            this.needLocation = false;
+            this.location = result;
+            this.getDataByLocation(this.location.latitude, this.location.longitude);
+          })
+          .catch(e => {
+            console.log("loc error", e);
+          });
+      });
+    });
   },
   data() {
+    //   https://samples.openweathermap.org/data/2.5/forecast/daily?zip=94040&appid=b6907d289e10d714a6e88b30761fae22
     return {
-      searchText: "",
-      cards: [
-        {
-          city: "São Paulo",
-          max: 28,
-          min: 25,
-          last: "02/07/2019"
-        },
-        {
-          city: "Guarulhos",
-          max: 25,
-          min: 22,
-          last: "02/07/2019"
-        },
-        {
-          city: "São Bernardo",
-          max: 31,
-          min: 30,
-          last: "02/07/2019"
-        },
-        {
-          city: "São Caetano",
-          max: 25,
-          min: 21,
-          last: "02/07/2019"
-        },
-        {
-          city: "Limeira",
-          max: 28,
-          min: 25,
-          last: "02/07/2019"
-        }
-      ],
+      endPoint: "https://api.openweathermap.org/data/2.5/",
+      apiKey: "785080ab68202eab8f6fd566d139edfd",
+      cityName: "Buscar cidade...",
+      weatherData: [],
+      location: null,
+      weatherDataList: [],
+      searchText: ""
     };
+  },
+  mounted() {
+    SelectedPageService.getInstance().updateSelectedPage("Weather");
   },
 
   computed: {
@@ -115,8 +133,71 @@ export default {
     onDrawerButtonTap() {
       utils.showDrawer();
     },
-    
 
+    getDataByLocation(lat, lon) {
+      axios
+        .get(
+          this.endPoint +
+            "find?lat=" +
+            lat +
+            "&lon=" +
+            lon +
+            "&cnt=1&APPID=" +
+            this.apiKey +
+            "&units=metric"
+        )
+        .then(response => {
+          this.weatherData = response.data;
+          this.weatherDataList = response.data.list;
+        })
+        .catch(error => {
+          console.log(error);
+        });
+    },
+    getDataByCityName() {
+      axios
+        .get(
+          this.endPoint +
+            "find?q=" +
+            this.cityName +
+            "&cnt=1&APPID=" +
+            this.apiKey +
+            "&units=metric"
+        )
+        .then(response => {
+          this.weatherData = response.data;
+          this.weatherDataList = response.data.list;
+          this.validCity = true;
+        })
+        .catch(error => {
+          console.log(error);
+        });
+    },
+    timeConverter(UNIX_timestamp) {
+      var a = new Date(UNIX_timestamp * 1000);
+      var months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      ];
+      var year = a.getFullYear();
+      var month = months[a.getMonth()];
+      var date = a.getDate();
+      var hour = a.getHours();
+      var min = a.getMinutes();
+      var sec = a.getSeconds();
+      var time = date + " de " + month + " de " + year + " " + hour + ":" + min;
+      return time;
+    },
     onWriteName() {}
   }
 };
@@ -140,41 +221,71 @@ export default {
     rgba(32, 9, 96, 1) 35%,
     rgba(120, 17, 153, 1) 100%
   );
-}
 
-.titulo {
-  font-size: 20;
-  color: #fff;
-}
+  .title {
+    font-size: 20;
+    color: #fff;
+  }
 
-.search-bar {
-  background-color: rgba(255, 255, 255, 0.3);
-  border-radius: 25px;
-  color: #fff;
-  padding: 10;
-  font-size: 20;
-}
+  .search-bar {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 50px;
+    color: #373564;
+    padding: 10;
+    font-size: 20;
+    margin: 20;
+    text-align: center;
+    width: 90%;
+  }
 
-.city-title {
-  color: #fff;
-  margin-bottom: 30;
-}
+  .card-item {
+    margin: 40 20;
+    padding: 30;
+    background-color: #220a56;
+    border-radius: 25px;
+    border-bottom: 0;
 
-.card-item {
-  margin: 40 20;
-  padding: 30;
-  background-color: #220a56;
-  border-radius: 25px;
-  border-bottom: 0;
-}
+    .card-header {
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 50;
 
-.text {
-  font-size: 22;
-  color: #fff;
-}
+      .temp-now {
+        font-size: 50;
+        color: #fff;
+      }
 
-.data-att {
-  font-size: 15;
-  color: #ccc;
+      .temp-icon {
+        width: 120;
+      }
+    }
+
+    .city-title {
+      color: #fff;
+      margin-bottom: 30;
+      font-size: 30;
+    }
+
+    .temp-box {
+      justify-content: space-around;
+      margin-bottom: 50;
+      padding: 0 50;
+
+      .pipe {
+        width: 1px;
+        height: 150px;
+        background-color: #fff;
+      }
+    }
+    .data-att {
+      font-size: 15;
+      color: #ccc;
+    }
+  }
+
+  .text {
+    font-size: 18;
+    color: #fff;
+  }
 }
 </style>

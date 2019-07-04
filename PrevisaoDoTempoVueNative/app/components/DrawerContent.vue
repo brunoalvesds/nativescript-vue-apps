@@ -8,12 +8,12 @@
         
             <ScrollView row="1" class="sidedrawer-content">
                 <StackLayout>
-                    <GridLayout columns="auto, *" :class="'sidedrawer-list-item' + (selectedPage === 'Weather' ? ' selected': '')" @tap="onNavigationItemTap(Weather)">
+                    <GridLayout columns="auto, *" :class="'sidedrawer-list-item' + (selectedPage === 'Weather' ? ' selected': '')" @tap="onNavigationItemTap(Home)">
                         <Label col="0" text.decode="&#xf015;" class="fa"></Label>
                         <Label col="1" text="Weather" class="p-r-10"></Label>
                     </GridLayout>
 
-                    <GridLayout columns="auto, *" :class="'sidedrawer-list-item' + (selectedPage === 'Browse' ? ' selected': '')" @tap="onNavigationItemTap(Browse)">
+                    <!-- <GridLayout columns="auto, *" :class="'sidedrawer-list-item' + (selectedPage === 'Browse' ? ' selected': '')" @tap="onNavigationItemTap(Browse)">
                         <Label col="0" text.decode="&#xf1ea;" class="fa"></Label>
                         <Label col="1" text="Browse" class="p-r-10"></Label>
                     </GridLayout>
@@ -33,7 +33,7 @@
                     <GridLayout columns="auto, *" :class="'sidedrawer-list-item' + (selectedPage === 'Settings' ? ' selected': '')" @tap="onNavigationItemTap(Settings)">
                         <Label col="0" text.decode="&#xf013;" class="fa"></Label>
                         <Label col="1" text="Settings" class="p-r-10"></Label>
-                    </GridLayout>
+                    </GridLayout> -->
                 </StackLayout>
             </ScrollView>
         </GridLayout>
